@@ -1,0 +1,42 @@
+body {
+  background: rgb(248, 237, 235);
+  padding: 5px;
+  display: flex;
+  font-family: 'Segoe UI';
+}
+
+#app {
+  flex: 1;
+}
+
+
+#animation-container {
+  width: 1100px;
+  height: 500px;
+  position: relative;
+  background-color: rgb(255, 230, 183);
+}
+
+.object {
+  background: brown;
+  border-radius: 100%;
+  position: absolute;
+  height: 50px;
+  aspect-ratio: 1;
+}
+
+
+.btn-primary {
+  margin-top: 12px;
+  background-color: orangered;
+  transition: all 0.2s; 
+  font-family: inherit;
+  font-weight: 600;
+  padding: 15px;
+  font-size: 12pt;
+  width: 200px;
+}
+
+.btn-primary:hover {
+  background-color: rgb(165, 44, 0);
+}
