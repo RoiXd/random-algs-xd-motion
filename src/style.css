@@ -11,9 +11,25 @@ body {
 
 
 #animation-container {
+  z-index: -99;
   width: 1100px;
   height: 500px;
   position: relative;
+  flex: 1;
+}
+
+#animation-container svg {
+  z-index: -50;
+}
+
+.animation-wrapper {
+  z-index: -99;
+  position: relative;
+  width: 1100px;
+  height: 500px;
+  background: none;
+  pointer-events: none;
+  padding: 30px;
   background-color: rgb(255, 230, 183);
 }
 
@@ -23,8 +39,8 @@ body {
   position: absolute;
   height: 50px;
   aspect-ratio: 1;
+  transform: translate(-50%, 50%);
 }
-
 
 .btn-primary {
   margin-top: 12px;
