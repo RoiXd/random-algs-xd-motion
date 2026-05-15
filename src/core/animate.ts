@@ -97,7 +97,7 @@ options: AnimationOptions = {}) {
     let animationStopped = false
 
     const trail = new TrailEffect(container, element)
-    animation.onfinish = async (event) => {
+    animation.onfinish = (event) => {
         setTimeout(() => {
             trail.clear()
             animationStopped = true
@@ -107,6 +107,7 @@ options: AnimationOptions = {}) {
 
     if(tracePath) {
         let startTime: number | null = null
+        let lastFrame: number | null = null
 
         function drawPath(timestamp: number) {
             if(animationStopped) return
@@ -120,18 +121,23 @@ options: AnimationOptions = {}) {
             const currentFrame = Math.floor(easedProgress * (points.length - 1))
 
             if (currentFrame < points.length) {
+                    if(currentFrame !== lastFrame) {
 
-                trail.addPoint(
-                        points[currentFrame][0] * trail.getCanvasRect().width,
-                        (1 - points[currentFrame][1]) * trail.getCanvasRect().height
-                    )
+                    trail.addPoint(
+                            points[currentFrame][0] * trail.getCanvasRect().width,
+                            (1 - points[currentFrame][1]) * trail.getCanvasRect().height
+                        )
 
 
-                pointsToDraw.push([points[currentFrame][0] * 100, (1 - points[currentFrame][1]) * 100])
+                    pointsToDraw.push([points[currentFrame][0] * 100, (1 - points[currentFrame][1]) * 100])
 
-                const pointsString = pointsToDraw.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(' ')
-                path.setAttribute("points", pointsString)
-                
+                    const pointsString = pointsToDraw.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join(' ')
+                    path.setAttribute("points", pointsString)
+                    
+                    console.log("Points: ", pointsToDraw.length, "Expected: ", fps*duration)
+
+                    lastFrame = currentFrame 
+                }
                 requestAnimationFrame(drawPath)
             } 
         }
@@ -140,24 +146,7 @@ options: AnimationOptions = {}) {
 
     return animation
 }
-
-// Fonction de diagnostic (garde-la)
-function diagnostiquerPolyline(svgSelector: string, polylineSelector: string) {
-    const svg = document.querySelector(svgSelector);
-    const polyline = svg?.querySelector(polylineSelector);
-    
-    if (!svg) console.error('❌ SVG non trouvé');
-    if (!polyline) console.error('❌ Polyline non trouvé');
-    
-    if (polyline) {
-        console.log('Points:', polyline.getAttribute('points')?.substring(0, 200));
-        console.log('Stroke:', polyline.getAttribute('stroke'));
-        console.log('Stroke-width:', polyline.getAttribute('stroke-width'));
-    }
-    
-    return { svg, polyline };
-}
-
+// Utilitary function for getting the progress including easing
 function getEasedProgress(linearProgress: number, easing: string): number {
     switch (easing) {
         case 'linear':
