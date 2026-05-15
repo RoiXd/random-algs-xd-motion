@@ -9,3 +9,4 @@ The function `fn2Animation` takes as input:
 
 And returns a Web API [`Animation`](https://developer.mozilla.org/en-US/docs/Web/API/Animation) 
 object, which can be played, played in reverse, played in a loop...
+## Decorate animations with a variety of effects
