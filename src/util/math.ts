@@ -1,5 +1,5 @@
-import { Getter } from "./types.ts"
-
+import type { Getter } from "./types.ts"
+/** This is a comment. */
 export class Derivative {
     f: Getter<number>;
     x: Getter<number>;
@@ -29,8 +29,9 @@ export class Derivative {
         const derivatives = new Map<number, number>();
         
         const computeDerivative = (order: number, startIdx: number, endIdx: number): number => {
+
             if (order === 0) {
-                return this.f_history[endIdx];
+                return this.f_history.at(endIdx) ?? 0;
             }
             
             if (endIdx - startIdx < order) {
@@ -43,6 +44,8 @@ export class Derivative {
             
             const x_left = this.x_history[endIdx - 1];
             const x_right = this.x_history[endIdx];
+
+            if(!x_left || !x_right) throw new TypeError("Wrong derivative index")
             
             return (rightDeriv - leftDeriv) / (x_right - x_left);
         };
@@ -85,12 +88,12 @@ export class Derivative {
         const leftDeriv = this.calcNextDerivativeRecursive(order - 1, 0, n - 2);
         const rightDeriv = this.calcNextDerivativeRecursive(order - 1, 1, n - 1);
         
-        return (rightDeriv - leftDeriv) / (this.x_history[n-1] - this.x_history[n-2]);
+        return (rightDeriv - leftDeriv) / (this.x_history[n-1]! - this.x_history[n-2]!);
     }
     
     private calcNextDerivativeRecursive(order: number, start: number, end: number): number {
         if (order === 0) {
-            return this.f_history[end];
+            return this.f_history[end] ?? 0;
         }
         
         if (end - start < order) {
@@ -100,6 +103,6 @@ export class Derivative {
         const leftDeriv = this.calcNextDerivativeRecursive(order - 1, start, end - 1);
         const rightDeriv = this.calcNextDerivativeRecursive(order - 1, start + 1, end);
         
-        return (rightDeriv - leftDeriv) / (this.x_history[end] - this.x_history[start]);
+        return (rightDeriv - leftDeriv) / (this.x_history[end]! - this.x_history[start]!);
     }
 }

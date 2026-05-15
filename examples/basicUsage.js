@@ -33,7 +33,7 @@ function animateObj() {
     [-4, 4], 60, 3, {
       easing: "linear",
       tracePath: true,
-      trailStyle: {
+      traceStyle: {
         stroke: "orangered",
         strokeWidth: "0.2px",
         strokeDasharray: "3px 2px"
