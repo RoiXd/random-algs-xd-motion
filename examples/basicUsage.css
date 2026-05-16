@@ -18,7 +18,7 @@ body {
   flex: 1;
 }
 
-#animation-container svg {
+.animation-trace {
   z-index: -50;
 }
 

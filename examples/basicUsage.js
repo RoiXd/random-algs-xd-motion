@@ -27,20 +27,31 @@ const animateBtn = document.getElementById("animate-btn")
 const object = document.getElementById("animation-obj")
 
 function animateObj() {
-  const fx = x => Math.sin(x)*Math.cos(2*x)
+  const fx = x => Math.sin(2*x)*Math.cos(5*x)
 
   const anim = fn2Animation(object, fx,
-    [-4, 4], 60, 3, {
+    [-2, 2], 50, 5, {
       easing: "linear",
       tracePath: true,
       traceStyle: {
-        stroke: "orangered",
-        strokeWidth: "0.2px",
-        strokeDasharray: "3px 2px"
+        stroke: "magenta",
+        strokeOpacity: "0.5",
+        strokeWidth: "0.25px",
+        strokeDasharray: "2px 2px"
+      },
+      enableTrail: true,
+      trailStyle: {
+        maxLength: 50,
+        decay: 0.08,
+        opacityGradient: (p) => 1-p,
+        lineWidthGradient: (p) => 50*(1 - p**(2/3)),
+        hueGradient: (p) => 30 + + 40*p**3 + 120*p**2,
+        lightnessGradient: (p) => 80,
+        saturationGradient: (p) => 100
       }
     })
 
-  console.log(anim)
+
   anim.play()
 }
 

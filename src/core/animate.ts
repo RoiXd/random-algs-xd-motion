@@ -33,7 +33,7 @@ options: AnimationOptions = {}) {
     let container = element.parentElement
     if (!container) container = document.body
 
-    const previousSVG = document.querySelector(".animation-trail")    
+    const previousSVG = document.querySelector(".animation-trace")    
     if(previousSVG) container.removeChild(previousSVG)
     
     // Génération des points
@@ -83,16 +83,31 @@ options: AnimationOptions = {}) {
             animation,
             duration,
             points,
-            easing,
-            (point, frame) => {
-                if (!trail) return
-                const canvasRect = trail.getCanvasRect()
+            easing
+        )
+    }
+    if(enableTrail) {
+        let startTime: number | null = null
+        function refreshTrail(timestamp: number) {
+            if (!trail || animationStopped) return
+
+            if (!startTime) startTime = timestamp
+
+            const currentTime = parseFloat(animation.currentTime!.toString())
+            const linearProgress = Math.min(1, currentTime / (duration * 1000))
+            const easedProgress = getEasedProgress(linearProgress, easing)
+            
+            const currentFrame = Math.floor(easedProgress * (points.length - 1))
+            const point = points.at(currentFrame)
+            const canvasRect = trail.getCanvasRect()
+            if(point) 
                 trail.addPoint(
                     point[0] * canvasRect.width,
                     (1 - point[1]) * canvasRect.height
                 )
-            }
-        )
+            requestAnimationFrame(refreshTrail)
+        }
+        requestAnimationFrame(refreshTrail)
     }
 
     animation.onfinish = (event) => {
@@ -149,7 +164,7 @@ export class TraceEffect {
         this.options = options
 
         // Remove existing trace if any
-        const previousSVG = this.container.querySelector(".animation-trail")
+        const previousSVG = this.container.querySelector(".animation-trace")
         if (previousSVG) this.container.removeChild(previousSVG)
 
         // Create SVG container
@@ -158,7 +173,7 @@ export class TraceEffect {
         this.svg.setAttribute("viewBox", "0 0 100 100")
         this.svg.setAttribute("width", "100%")
         this.svg.setAttribute("height", "100%")
-        this.svg.classList.add("animation-trail")
+        this.svg.classList.add("animation-trace")
         this.svg.style.position = 'absolute'
         this.svg.style.top = '0'
         this.svg.style.left = '0'
@@ -348,7 +363,8 @@ type TrailEffectOptions = {
 
 
 /**
- * Creates a trailing visual effect that follows an HTML element
+ * Creates a trailing visual effect that follows an HTML element, 
+ * somewhat like a traveling star
  * @class
  * @example
  * const container = document.getElementById('animation-container');
@@ -370,13 +386,26 @@ export class TrailEffect {
     options: TrailEffectOptions
     private parent
     private canvas: HTMLCanvasElement
-    private followedElement: HTMLElement
+    private followedElement: HTMLElement | undefined
     private ctx: CanvasRenderingContext2D
     private trail: Array<{x: number, y: number, age: number}> = []
-    private maxLength = 30
-    private decay = 0.05
+    private maxLength
     private margin = 15
 
+
+
+    setMargin(value: number) {
+        if (value < 0) this.margin = 0
+        this.margin = value
+
+        this.canvas.style.top = `-${this.margin/2}%`
+        this.canvas.style.left = `-${this.margin/2}%`
+        this.canvas.style.width = `${100+this.margin}%`        
+        this.canvas.style.height = `${100+this.margin}%`
+
+        this.canvas.width = this.parent.clientWidth*(1+this.margin/100)  
+        this.canvas.height = this.parent.clientHeight*(1+this.margin/100) 
+    }
 
     /**
      * Gets the effective dimensions of the canvas accounting for margin
@@ -395,10 +424,11 @@ export class TrailEffect {
      * @param parent - Container element that holds the trail canvas
      * @param followedElement - Element whose position the trail follow
      */
-    constructor(parent: HTMLElement, followedElement: HTMLElement, options: TrailEffectOptions = {}) {
+    constructor(parent: HTMLElement, followedElement?: HTMLElement, options: TrailEffectOptions = {}) {
         this.options = options
 
         this.canvas = document.createElement('canvas')
+        this.canvas.classList.add("animation-trail")
         this.canvas.style.position = 'absolute'
         this.canvas.style.zIndex = "-10"
         this.canvas.style.top = `-${this.margin/2}%`
@@ -411,6 +441,8 @@ export class TrailEffect {
         
         this.ctx = this.canvas.getContext('2d')!
         parent.appendChild(this.canvas)
+        
+        this.maxLength = options.maxLength || 30
 
         this.parent = parent
         
@@ -427,7 +459,12 @@ export class TrailEffect {
      * @param {number} x - X coordinate of the point (relative to parent container)
      * @param {number} y - Y coordinate of the point (relative to parent container)
      */
-    addPoint(x: number, y: number) {
+    addPoint(x?: number, y?: number) {
+        if(typeof x !== "number" || typeof y !== "number") {
+            if(!this.followedElement) throw new Error("addPoint() has been called without arguments but no followed element was specified.")
+            x = this.followedElement.offsetLeft
+            y = this.followedElement.offsetTop  + this.followedElement.clientHeight       
+        }
         this.trail.unshift({ x: x+this.parent.clientWidth*(this.margin/200), 
             y: y+this.parent.clientHeight*(this.margin/200), age: 1 })
         if (this.trail.length > this.maxLength) {
@@ -441,29 +478,26 @@ export class TrailEffect {
         
         if (this.trail.length < 2) return
         
-        // Dessiner la traînée lumineuse
-        for (let i = 0; i < this.trail.length - 1; i++) {
-            const elRect = this.followedElement.getBoundingClientRect()
-            const { 
-                ageFactor = (p) => Math.pow(1 - p, 2),
-                opacityGradient = (ageFactor) => Math.min(0.8, ageFactor * 0.8),
-                lineWidthGradient = (p) => elRect.width,
+        const elRect = this.followedElement?.getBoundingClientRect()
+        const { 
+                decay =  0.05,
+                maxLength = 30,
+                opacityGradient = (p) => Math.min(0.8, Math.pow(1 - p, 2) * 0.8),
+                lineWidthGradient = (p) => elRect?.width ?? 20,
                 hueGradient = (p) => 60 - p*95,
                 saturationGradient = (p) => 100,
                 lightnessGradient = (p) => 60 + p*45,
                 linecap = "round"
             } = this.options
-
+        // Dessiner la traînée lumineuse
+        for (let i = 0; i < this.trail.length - 1; i++) {
             const p1 = this.trail[i]!
             const p2 = this.trail[i + 1]!
             
             const progress = i / this.trail.length
 
-            const _ageFactor = ageFactor(progress)
-            // = ageFactor(progress)
-            const opacity = opacityGradient(_ageFactor)
+            const opacity = opacityGradient(progress)
         
-            // Taille du trait décroissante
             const lineWidth = lineWidthGradient(progress)
             
             // Dégradé de couleur (chaud → froid)
@@ -481,7 +515,7 @@ export class TrailEffect {
         }
         
         // Décrémenter l'âge des points (effet fondu)
-        this.trail = this.trail.map(p => ({ ...p, age: p.age - this.decay }))
+        this.trail = this.trail.map(p => ({ ...p, age: p.age - decay }))
             .filter(p => p.age > 0)
     }
     
